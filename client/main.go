@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"net"
 )
@@ -13,23 +15,39 @@ func main() {
 		fmt.Println("Failed to connect to Kafka:", err)
 		return
 	}
+
+    var buf bytes.Buffer
+
 	defer conn.Close()
 
-	header := []byte{
-		0x00, 0x00, 0x00, 0x12,  // header length
-		0x00, 0x00,   // API key         
-		0x00, 0x00,   // API version          
-		0x00, 0x00, 0x30, 0x39, // correlation id
-        0x00, 0x0B,            // client id length 
-		'm', 'y', '-', 'p', 'r', 'o', 'd', 'u', 'c', 'e', 'r', // Client ID
-	}
+	binary.Write(&buf, binary.BigEndian, uint32(38)) // Request Length
+	binary.Write(&buf, binary.BigEndian, uint16(0))  // API Key (Produce)
+	binary.Write(&buf, binary.BigEndian, uint16(0))  // API Version
+	binary.Write(&buf, binary.BigEndian, uint32(123)) // Correlation ID
+	binary.Write(&buf, binary.BigEndian, uint16(3))   // Client ID Length
+	buf.Write([]byte("app"))                         // Client ID
 
-	_, err = conn.Write(header)
+	// Request Body
+	binary.Write(&buf, binary.BigEndian, uint16(1))  // Required Acks
+	binary.Write(&buf, binary.BigEndian, uint32(5000)) // Timeout
+	binary.Write(&buf, binary.BigEndian, uint32(1))  // Number of Topics
+	binary.Write(&buf, binary.BigEndian, uint16(8))  // Topic Name Length
+	buf.Write([]byte("my_topic"))                    // Topic Name
+	binary.Write(&buf, binary.BigEndian, uint32(1))  // Number of Partitions
+	binary.Write(&buf, binary.BigEndian, uint32(0))  // Partition Index
+	binary.Write(&buf, binary.BigEndian, uint32(16)) // Message Set Size
 
-	if err != nil {
-		fmt.Println("Failed to send data:", err)
-		return
-	}
+	// Message Set
+	binary.Write(&buf, binary.BigEndian, uint64(0))  // Offset
+	binary.Write(&buf, binary.BigEndian, uint32(12)) // Message Size
+	binary.Write(&buf, binary.BigEndian, uint32(0))  // CRC (fake, should be computed)
+	binary.Write(&buf, binary.BigEndian, uint8(0))   // Magic Byte
+	binary.Write(&buf, binary.BigEndian, uint8(0))   // Attributes
+	binary.Write(&buf, binary.BigEndian, int32(-1))  // Key Length (-1 = no key)
+	binary.Write(&buf, binary.BigEndian, uint32(12)) // Value Length
+	buf.Write([]byte("Hello Kafka!"))                // Value
+
+    conn.Write(buf.Bytes())
 
 	fmt.Println("Kafka header sent successfully!")
 }
