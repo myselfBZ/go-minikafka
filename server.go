@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
 	"sync"
 
 	"github.com/myselfBZ/my-kafka/api"
@@ -24,6 +23,10 @@ type Server struct{
 
     conns map[string]net.Conn
     
+    // brokers []Broker
+    // type Broker struct{
+        // Partition
+    // }
     mu sync.Mutex
 }
 
@@ -75,30 +78,28 @@ func (s *Server) handleConnection(conn net.Conn)  error{
     return nil
 }
 
-func (s *Server) run(){
+func (s *Server) Run() error {
     ln, err := net.Listen("tcp", "localhost:6969")
     if err != nil{
         log.Fatal(err)
     }
-    go s.accept(ln)
     go s.hanldeMessages()
-    <-s.quit
-    os.Exit(0)
+    return s.accept(ln)    
 }
 
-func (s *Server) accept(ln net.Listener) {
+func (s *Server) accept(ln net.Listener) error {
     for {
         conn, err := ln.Accept()
         if err != nil{
             log.Println("couldnt connect", err)
+            continue
         }
-
         go s.handleConnection(conn)
     }
 }
 
 func main(){
     s := NewServer("localhost:6969")
-    s.run()
+    s.Run()
 }
 

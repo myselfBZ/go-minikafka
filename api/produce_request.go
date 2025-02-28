@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
 )
 
 type MessageMetaData struct{
@@ -33,7 +32,7 @@ type Topic struct{
 
 
 type ProduceRequest struct {
-	Header *RequestHeader
+	header *RequestHeader
 	Acks   uint16
     Timeout uint32
     TopicNum uint32
@@ -42,7 +41,7 @@ type ProduceRequest struct {
 
 
 
-func (p *ProduceRequest) readMessage(buff *bytes.Buffer) *Message {
+func (p *ProduceRequest) readMessage(buff *bytes.Buffer) (*Message, error) {
     var msg Message
     binary.Read(buff, binary.BigEndian, &msg.MetaData.Offset)
     binary.Read(buff, binary.BigEndian, &msg.MetaData.MessageSize)
@@ -50,7 +49,6 @@ func (p *ProduceRequest) readMessage(buff *bytes.Buffer) *Message {
     binary.Read(buff, binary.BigEndian, &msg.MetaData.Magic)
     binary.Read(buff, binary.BigEndian, &msg.MetaData.Attributes)
     
-    log.Println("offset: ", msg.MetaData.Offset)
     var keyLen int32
     binary.Read(buff, binary.BigEndian, &keyLen)
 
@@ -63,13 +61,14 @@ func (p *ProduceRequest) readMessage(buff *bytes.Buffer) *Message {
     var valueLen uint32
     binary.Read(buff, binary.BigEndian, &valueLen)
     value := make([]byte, valueLen)
-    buff.Read(value)
+    if _, err := buff.Read(value); err != nil{
+        return nil, err
+    }
     msg.Value = string(value)
-    log.Println("value: ", msg.Value)
-    return &msg
+    return &msg, nil
 }
 
-func (p *ProduceRequest) Deserialize(buff *bytes.Buffer) {
+func (p *ProduceRequest) Deserialize(buff *bytes.Buffer) error {
     binary.Read(buff, binary.BigEndian, &p.Acks)
     binary.Read(buff, binary.BigEndian, &p.Timeout)
     binary.Read(buff, binary.BigEndian, &p.TopicNum)
@@ -92,7 +91,10 @@ func (p *ProduceRequest) Deserialize(buff *bytes.Buffer) {
             binary.Read(buff, binary.BigEndian, &part.MessageSetSize)
             readMsg := 0
             for mg := 0; mg < int(part.MessageSetSize); mg+=readMsg{
-                msg := p.readMessage(buff)
+                msg, err := p.readMessage(buff)
+                if err != nil{
+                    return err
+                }
                 readMsg += int(msg.MetaData.MessageSize)
                 part.Messages = append(part.Messages, msg)
             }
@@ -103,8 +105,9 @@ func (p *ProduceRequest) Deserialize(buff *bytes.Buffer) {
         p.Topics = append(p.Topics, topic)
 
     }
+    return nil
 }
 
 func (p *ProduceRequest) Headers() *RequestHeader {
-    return p.Header
+    return p.header
 }

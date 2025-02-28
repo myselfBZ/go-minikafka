@@ -23,7 +23,7 @@ const(
 
 type Request interface{
     Headers() *RequestHeader
-    Deserialize(*bytes.Buffer)
+    Deserialize(*bytes.Buffer) error
 }
 
 type RequestHeader struct{
@@ -47,13 +47,19 @@ func ParseRequest(data []byte) (Request, error) {
 
     switch header.ApiKey {
     case PRODUCE:
-        req = &ProduceRequest{Header: header}
+        req = &ProduceRequest{header: header}
     case FETCH:
        // TODO 
     default:
         return nil, errors.New("unknown api key")
     }
-    req.Deserialize(buff)
+
+    if err := req.Deserialize(buff); err != nil{
+        return nil, err
+    }
+
+
+
     return req, nil
 }
 
