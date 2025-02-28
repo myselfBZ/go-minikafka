@@ -23,10 +23,6 @@ type Server struct{
 
     conns map[string]net.Conn
     
-    // brokers []Broker
-    // type Broker struct{
-        // Partition
-    // }
     mu sync.Mutex
 }
 

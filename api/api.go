@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"log"
 )
 
 
@@ -49,7 +50,7 @@ func ParseRequest(data []byte) (Request, error) {
     case PRODUCE:
         req = &ProduceRequest{header: header}
     case FETCH:
-       // TODO 
+        req = &FetchRequest{headers: header}
     default:
         return nil, errors.New("unknown api key")
     }
@@ -69,6 +70,8 @@ func parseHeader(buffer *bytes.Buffer) (*RequestHeader, error) {
     if err := binary.Read(buffer, binary.BigEndian, &h.Length); err != nil{
         return nil, err
     }
+
+    log.Println("request legnth: ", h.Length)
 
     if err := binary.Read(buffer, binary.BigEndian, &h.ApiKey); err != nil {
         return nil, err
@@ -95,6 +98,8 @@ func parseHeader(buffer *bytes.Buffer) (*RequestHeader, error) {
         }
         h.ClientID = string(clientIDBytes)
     }
+
+    log.Println("client id: ", h.ClientID)
 
     return &h, nil
 }

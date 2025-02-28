@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/binary"
+	"log"
 )
 
 
@@ -55,34 +56,26 @@ type consumerTopic struct{
 //     ]
 // }
 
-func (f *FetchRequest) Deserialize(buff *bytes.Buffer) {
+func (f *FetchRequest) Deserialize(buff *bytes.Buffer) error {
     // Read fixed fields first
     binary.Read(buff, binary.BigEndian, &f.ReplicaID)
     binary.Read(buff, binary.BigEndian, &f.MaxWaitTime)
     binary.Read(buff, binary.BigEndian, &f.MinBytes)
-    binary.Read(buff, binary.BigEndian, &f.MaxBytes)
-    binary.Read(buff, binary.BigEndian, &f.IsolationLevel)
-    binary.Read(buff, binary.BigEndian, &f.SessionId)
-    binary.Read(buff, binary.BigEndian, &f.SessionEpoch)
 
-    // Read number of topics
     var topicCount uint32
     binary.Read(buff, binary.BigEndian, &topicCount)
 
-    // Read each topic
     for i := 0; i < int(topicCount); i++ {
         var topic consumerTopic
 
-        // Read topic name length
         var topicNameLen uint16
         binary.Read(buff, binary.BigEndian, &topicNameLen)
 
-        // Read topic name
         topicName := make([]byte, topicNameLen)
         buff.Read(topicName)
         topic.name = string(topicName)
+        log.Println("debug: my love wants to read the topic: ", topic.name)
 
-        // Read partition count
         var partitionCount uint32
         binary.Read(buff, binary.BigEndian, &partitionCount)
 
@@ -93,11 +86,13 @@ func (f *FetchRequest) Deserialize(buff *bytes.Buffer) {
             binary.Read(buff, binary.BigEndian, &partition.fetchOffset) // FetchOffset
             binary.Read(buff, binary.BigEndian, &partition.maxBytes)    // MaxBytes
 
+            log.Println("partition: ", partition.index)
             topic.partitions = append(topic.partitions, partition)
         }
 
         f.topics = append(f.topics, topic)
     }
+    return nil
 }
 
 
