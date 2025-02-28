@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 )
 
-type MessageMetaData struct{
+type messageMetaData struct{
     Offset uint64
     MessageSize uint32
     CRC uint32
@@ -13,21 +13,21 @@ type MessageMetaData struct{
     Attributes uint8
 }
 
-type Message struct{
-    MetaData MessageMetaData
+type message struct{
+    MetaData messageMetaData
     Key string
     Value string
 }
 
-type Partition struct{
+type partition struct{
     Index uint32
     MessageSetSize uint32
-    Messages []*Message
+    Messages []*message
 }
 
-type Topic struct{
+type topic struct{
     Name string
-    Paritions []*Partition
+    Paritions []*partition
 }
 
 
@@ -36,13 +36,13 @@ type ProduceRequest struct {
 	Acks   uint16
     Timeout uint32
     TopicNum uint32
-    Topics []Topic
+    Topics []topic
 }
 
 
 
-func (p *ProduceRequest) readMessage(buff *bytes.Buffer) (*Message, error) {
-    var msg Message
+func (p *ProduceRequest) readMessage(buff *bytes.Buffer) (*message, error) {
+    var msg message
     binary.Read(buff, binary.BigEndian, &msg.MetaData.Offset)
     binary.Read(buff, binary.BigEndian, &msg.MetaData.MessageSize)
     binary.Read(buff, binary.BigEndian, &msg.MetaData.CRC)
@@ -74,7 +74,7 @@ func (p *ProduceRequest) Deserialize(buff *bytes.Buffer) error {
     binary.Read(buff, binary.BigEndian, &p.TopicNum)
 
     for i := 0; i < int(p.TopicNum); i++{
-        var topic Topic
+        var topic topic
         var topicNameLen uint16
         binary.Read(buff, binary.BigEndian, &topicNameLen)
         topicName  := make([]byte, topicNameLen)
@@ -85,7 +85,7 @@ func (p *ProduceRequest) Deserialize(buff *bytes.Buffer) error {
         binary.Read(buff, binary.BigEndian, &partitionNum)
 
         for pt := 0; pt < int(partitionNum); pt++ {
-            var part Partition
+            var part partition
             binary.Read(buff, binary.BigEndian, &part.Index)
 
             binary.Read(buff, binary.BigEndian, &part.MessageSetSize)
