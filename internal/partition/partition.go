@@ -1,6 +1,7 @@
 package partition
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -21,20 +22,22 @@ func NewPartition(index uint) *Partition {
 type Partition struct{
     Index uint
     mu  sync.Mutex
-    messages []*Message
     nextOffset uint
+    messages []*Message
 }
 
 
 // return batch of messages and the offset 
-func (p *Partition) Read(startOffset uint, maxBytes uint) ([]*Message, int) {
+func (p *Partition) Read(startOffset uint, maxBytes uint) ([]*Message, int, error) {
     var result []*Message
 
     p.mu.Lock()
     defer p.mu.Unlock()
 
+
+
     if len(p.messages) < int(startOffset) {
-        return nil, -1
+        return nil, -1, errors.New("invalid offset")
     }
 
     msgSize := 0
@@ -47,15 +50,16 @@ func (p *Partition) Read(startOffset uint, maxBytes uint) ([]*Message, int) {
         result = append(result, msg)
     }
 
-    return result, int(result[len(result) - 1].Offset) + 1
+    return result, int(result[len(result) - 1].Offset) + 1, nil
 }
 
 func (p *Partition) Write(msg []byte) (uint) {
     p.mu.Lock()
     defer p.mu.Unlock()
+
+
+
     p.messages = append(p.messages, &Message{content: msg, Offset: p.nextOffset})
     p.nextOffset++
     return p.nextOffset
 }
-
-

@@ -69,8 +69,6 @@ func (f *FetchRequest) Deserialize(buff *bytes.Buffer) error {
     return nil
 }
 
-
-
 func (fr *FetchRequest) Headers() *RequestHeader {
     return fr.headers
 }

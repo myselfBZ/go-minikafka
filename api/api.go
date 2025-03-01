@@ -22,6 +22,11 @@ const(
     PRODUCE ApiKey = 0
 )
 
+type Response interface{
+    Serialize() *bytes.Buffer
+}
+
+
 type Request interface{
     Headers() *RequestHeader
     Deserialize(*bytes.Buffer) error
@@ -58,7 +63,6 @@ func ParseRequest(data []byte) (Request, error) {
     if err := req.Deserialize(buff); err != nil{
         return nil, err
     }
-
 
 
     return req, nil
@@ -103,4 +107,3 @@ func parseHeader(buffer *bytes.Buffer) (*RequestHeader, error) {
 
     return &h, nil
 }
-
