@@ -15,8 +15,6 @@ type FetchRequest struct{
     MinBytes int32
     MaxBytes int32           
     IsolationLevel int8      
-    SessionId int32          
-    SessionEpoch int32       
     topics []consumerTopic
 }
 
@@ -33,28 +31,6 @@ type consumerTopic struct{
     maxBytes int32
 }
 
-// FetchRequest {
-//     ReplicaId: int32          // -1 for normal consumers, broker ID for replicas
-//     MaxWaitTime: int32        // How long to wait for messages (in ms)
-//     MinBytes: int32           // Minimum bytes to fetch before returning
-//     MaxBytes: int32           // Maximum bytes to fetch (optional)
-//     IsolationLevel: int8      // 0 = Read Uncommitted, 1 = Read Committed
-//     SessionId: int32          // Session ID for incremental fetch (optional)
-//     SessionEpoch: int32       // Epoch for incremental fetch (optional)
-//
-//     Topics: [
-//         {
-//             TopicName: string
-//             Partitions: [
-//                 {
-//                     Partition: int32
-//                     FetchOffset: int64    // The offset from where to start reading
-//                     MaxBytes: int32       // Max bytes to fetch for this partition
-//                 }
-//             ]
-//         }
-//     ]
-// }
 
 func (f *FetchRequest) Deserialize(buff *bytes.Buffer) error {
     // Read fixed fields first
@@ -74,7 +50,6 @@ func (f *FetchRequest) Deserialize(buff *bytes.Buffer) error {
         topicName := make([]byte, topicNameLen)
         buff.Read(topicName)
         topic.name = string(topicName)
-        log.Println("debug: my love wants to read the topic: ", topic.name)
 
         var partitionCount uint32
         binary.Read(buff, binary.BigEndian, &partitionCount)
@@ -86,7 +61,6 @@ func (f *FetchRequest) Deserialize(buff *bytes.Buffer) error {
             binary.Read(buff, binary.BigEndian, &partition.fetchOffset) // FetchOffset
             binary.Read(buff, binary.BigEndian, &partition.maxBytes)    // MaxBytes
 
-            log.Println("partition: ", partition.index)
             topic.partitions = append(topic.partitions, partition)
         }
 
