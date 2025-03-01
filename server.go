@@ -84,12 +84,25 @@ func (s *Server) hanldeMessages() {
                 offset, err := writeMessages(&t, topic)
                 if err != nil{
                     msg.Conn.Write([]byte(err.Error()))
+                    return
                 }
 
                 log.Println("offset: ", offset)
             }
         case *api.FetchRequest:
-
+            for _, topic := range req.Topics{
+                serverTopic := s.topics[topic.Name]
+                msgs, _, err := serverTopic.Consume(topic.Partitions[0].Index, topic.Partitions[0].FetchOffset, uint(topic.Partitions[0].MaxBytes))
+                if err != nil{
+                    msg.Conn.Write([]byte(err.Error()))
+                    return
+                }
+                for _, m := range msgs {
+                    if _, err := msg.Conn.Write(m.Content); err != nil{
+                        log.Println("error writing to connection: ", err)
+                    }
+                }
+            }
         }
     }
 }

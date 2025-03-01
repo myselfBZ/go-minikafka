@@ -14,20 +14,20 @@ type FetchRequest struct{
     MinBytes int32
     MaxBytes int32           
     IsolationLevel int8      
-    topics []consumerTopic
+    Topics []consumerTopic
 }
 
 
 type consumerPartition struct{
-    index int32
-    fetchOffset int32
-    maxBytes int32
+    Index uint
+    FetchOffset uint
+    MaxBytes uint
 }
 
 type consumerTopic struct{
-    name string
-    partitions []consumerPartition
-    maxBytes int32
+    Name string
+    Partitions []consumerPartition
+    MaxBytes int32
 }
 
 
@@ -48,7 +48,7 @@ func (f *FetchRequest) Deserialize(buff *bytes.Buffer) error {
 
         topicName := make([]byte, topicNameLen)
         buff.Read(topicName)
-        topic.name = string(topicName)
+        topic.Name = string(topicName)
 
         var partitionCount uint32
         binary.Read(buff, binary.BigEndian, &partitionCount)
@@ -56,14 +56,14 @@ func (f *FetchRequest) Deserialize(buff *bytes.Buffer) error {
         for j := 0; j < int(partitionCount); j++ {
             var partition consumerPartition
 
-            binary.Read(buff, binary.BigEndian, &partition.index)      // Partition ID
-            binary.Read(buff, binary.BigEndian, &partition.fetchOffset) // FetchOffset
-            binary.Read(buff, binary.BigEndian, &partition.maxBytes)    // MaxBytes
+            binary.Read(buff, binary.BigEndian, &partition.Index)      // Partition ID
+            binary.Read(buff, binary.BigEndian, &partition.FetchOffset) // FetchOffset
+            binary.Read(buff, binary.BigEndian, &partition.MaxBytes)    // MaxBytes
 
-            topic.partitions = append(topic.partitions, partition)
+            topic.Partitions = append(topic.Partitions, partition)
         }
 
-        f.topics = append(f.topics, topic)
+        f.Topics = append(f.Topics, topic)
     }
     return nil
 }

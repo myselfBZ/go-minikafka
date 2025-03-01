@@ -103,7 +103,6 @@ func main() {
 		fmt.Println("Failed to connect to Kafka:", err)
 		return
 	}
-    //
     // req := &FetchRequest{
     //     ReplicaID:   -1,
     //     MaxWaitTime: 5000,
