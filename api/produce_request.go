@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/binary"
+	"log"
 )
 
 type messageMetaData struct{
@@ -25,7 +26,7 @@ type partition struct{
     Messages []*message
 }
 
-type topic struct{
+type Topic struct{
     Name string
     Paritions []*partition
 }
@@ -36,7 +37,7 @@ type ProduceRequest struct {
 	Acks   uint16
     Timeout uint32
     TopicNum uint32
-    Topics []topic
+    Topics []Topic
 }
 
 
@@ -65,6 +66,7 @@ func (p *ProduceRequest) readMessage(buff *bytes.Buffer) (*message, error) {
         return nil, err
     }
     msg.Value = string(value)
+    log.Println("message recieved: ", msg.Value)
     return &msg, nil
 }
 
@@ -74,7 +76,7 @@ func (p *ProduceRequest) Deserialize(buff *bytes.Buffer) error {
     binary.Read(buff, binary.BigEndian, &p.TopicNum)
 
     for i := 0; i < int(p.TopicNum); i++{
-        var topic topic
+        var topic Topic
         var topicNameLen uint16
         binary.Read(buff, binary.BigEndian, &topicNameLen)
         topicName  := make([]byte, topicNameLen)

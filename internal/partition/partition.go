@@ -2,6 +2,7 @@ package partition
 
 import (
 	"errors"
+	"log"
 	"sync"
 )
 
@@ -58,8 +59,8 @@ func (p *Partition) Write(msg []byte) (uint) {
     defer p.mu.Unlock()
 
 
-
     p.messages = append(p.messages, &Message{content: msg, Offset: p.nextOffset})
     p.nextOffset++
+    log.Println("message has been written successfully: ", string(msg))
     return p.nextOffset
 }

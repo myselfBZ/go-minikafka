@@ -38,8 +38,27 @@ func NewServer(addr string) *Server{
         quit: make(chan struct{}),
         mu: sync.Mutex{},
         topicMu: sync.Mutex{},
+        topics: map[string]*topics.Topic{
+            "kafka":topics.NewTopic("kafka", 0),
+        },
         conns: make(map[string]net.Conn),
     }
+}
+
+
+func writeMessages(clientTopic *api.Topic, serverTopic *topics.Topic) (uint, error) {
+    var offset uint
+    for _, p := range clientTopic.Paritions{
+        for _, msg := range p.Messages{
+            var err  error
+            offset, err = serverTopic.Produce(uint(p.Index), []byte(msg.Value))
+            if err != nil{
+                return 0, err
+            }
+        }
+    } 
+
+    return offset, nil
 }
 
 func (s *Server) hanldeMessages() {
@@ -51,7 +70,6 @@ func (s *Server) hanldeMessages() {
             msg.Conn.Write([]byte("malformed request"))
             return
         }
-
         switch req := r.(type) {
 
         case *api.ProduceRequest:
@@ -63,6 +81,12 @@ func (s *Server) hanldeMessages() {
                     s.topics[t.Name] = topic
                     s.topicMu.Unlock()
                 }
+                offset, err := writeMessages(&t, topic)
+                if err != nil{
+                    msg.Conn.Write([]byte(err.Error()))
+                }
+
+                log.Println("offset: ", offset)
             }
         case *api.FetchRequest:
 

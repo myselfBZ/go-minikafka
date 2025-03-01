@@ -20,16 +20,15 @@ func produceRequest() []byte {
 	// Request Body
 	binary.Write(&buf, binary.BigEndian, uint16(1))  // Required Acks
 	binary.Write(&buf, binary.BigEndian, uint32(5000)) // Timeout
-	binary.Write(&buf, binary.BigEndian, uint32(2))  // Number of Topics
-	binary.Write(&buf, binary.BigEndian, uint16(8))  // Topic Name Length
-	buf.Write([]byte("my_topic"))                    // Topic Name
+	binary.Write(&buf, binary.BigEndian, uint32(1))  // Number of Topics
+	binary.Write(&buf, binary.BigEndian, uint16(5))  // Topic Name Length
+	buf.Write([]byte("kafka"))                    // Topic Name
 	binary.Write(&buf, binary.BigEndian, uint32(1))  // Number of Partitions
 	binary.Write(&buf, binary.BigEndian, uint32(0))  // Partition Index
-	binary.Write(&buf, binary.BigEndian, uint32(24)) // Message Set Size
+	binary.Write(&buf, binary.BigEndian, uint32(12)) // Message Set Size
 
 	// Message Set
-    // 2 messages in one partition
-	binary.Write(&buf, binary.BigEndian, uint64(123))  // Offset
+	binary.Write(&buf, binary.BigEndian, uint64(0))  // Offset
 	binary.Write(&buf, binary.BigEndian, uint32(12)) // Message Size
 	binary.Write(&buf, binary.BigEndian, uint32(0))  // CRC (fake, should be computed)
 	binary.Write(&buf, binary.BigEndian, uint8(0))   // Magic Byte
@@ -38,36 +37,8 @@ func produceRequest() []byte {
 	binary.Write(&buf, binary.BigEndian, uint32(12)) // Value Length
 	buf.Write([]byte("Hello Kafka!"))                // Value
 
-	binary.Write(&buf, binary.BigEndian, uint64(124))  // Offset
-	binary.Write(&buf, binary.BigEndian, uint32(12)) // Message Size
-	binary.Write(&buf, binary.BigEndian, uint32(0))  // CRC (fake, should be computed)
-	binary.Write(&buf, binary.BigEndian, uint8(0))   // Magic Byte
-	binary.Write(&buf, binary.BigEndian, uint8(0))   // Attributes
-	binary.Write(&buf, binary.BigEndian, int32(-1))  // Key Length (-1 = no key)
-	binary.Write(&buf, binary.BigEndian, uint32(14)) // Value Length
-	buf.Write([]byte("Hello Kafka 1!"))                // Value
-
-    // second topic
-	binary.Write(&buf, binary.BigEndian, uint16(9))  // Topic Name Length
-	buf.Write([]byte("my_topic1"))                    // Topic Name
-	binary.Write(&buf, binary.BigEndian, uint32(1))  // Number of Partitions
-	binary.Write(&buf, binary.BigEndian, uint32(0))  // Partition Index
-	binary.Write(&buf, binary.BigEndian, uint32(12)) // Message Set Size
-
-    // message
-	binary.Write(&buf, binary.BigEndian, uint64(124))  // Offset
-	binary.Write(&buf, binary.BigEndian, uint32(12)) // Message Size
-	binary.Write(&buf, binary.BigEndian, uint32(0))  // CRC (fake, should be computed)
-	binary.Write(&buf, binary.BigEndian, uint8(0))   // Magic Byte
-	binary.Write(&buf, binary.BigEndian, uint8(0))   // Attributes
-	binary.Write(&buf, binary.BigEndian, int32(-1))  // Key Length (-1 = no key)
-    msg := "Hello Kafka from the second topic partition index 0"
-	binary.Write(&buf, binary.BigEndian, uint32(len(msg))) // Value Length
-	buf.Write([]byte(msg))                // Value
-    
     return buf.Bytes()
 }
-
 type FetchRequest struct {
 	ReplicaID   int32
 	MaxWaitTime int32
@@ -132,28 +103,28 @@ func main() {
 		fmt.Println("Failed to connect to Kafka:", err)
 		return
 	}
-
-    req := &FetchRequest{
-        ReplicaID:   -1,
-        MaxWaitTime: 5000,
-        MinBytes:    1,
-        Topics: []FetchTopic{
-            {
-                Name: "test-topic",
-                Partitions: []FetchPartition{
-                    {
-                        Partition:   0,
-                        FetchOffset: 0,
-                        MaxBytes:    1048576, // 1MB
-                    },
-                },
-            },
-        },
-    }
+    //
+    // req := &FetchRequest{
+    //     ReplicaID:   -1,
+    //     MaxWaitTime: 5000,
+    //     MinBytes:    1,
+    //     Topics: []FetchTopic{
+    //         {
+    //             Name: "test-topic",
+    //             Partitions: []FetchPartition{
+    //                 {
+    //                     Partition:   0,
+    //                     FetchOffset: 0,
+    //                     MaxBytes:    1048576, // 1MB
+    //                 },
+    //             },
+    //         },
+    //     },
+    // }
 
 	defer conn.Close()
 
-    conn.Write(req.Encode())
+    conn.Write(produceRequest())
 
 
 }
